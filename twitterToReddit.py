@@ -24,6 +24,7 @@ errors = 0
 copyFrom = os.environ['TWITTER_USERNAME']
 postTo = os.environ['REDDIT_SUB']
 
+time.sleep(30)
 # Get latest tweet
 def get_last_tweet(self):
     try:
@@ -124,7 +125,7 @@ while True:
         # If tweet is only text
         else:
             print("*************************************")
-            print("Tweet has No Text")
+            print("Tweet has Only Text")
             post_text = ""
             expanded_url = None
             url = None
@@ -133,4 +134,3 @@ while True:
         if title == url:
             title = "Fortnite Twitter"
         post()
-        time.sleep(10)
