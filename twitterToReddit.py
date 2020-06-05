@@ -28,8 +28,12 @@ postTo = os.environ['REDDIT_SUB']
 def get_last_tweet(self):
     try:
         tweet = self.user_timeline(copyFrom,count = 1, tweet_mode = "extended", include_entities = True)[0]
+        print("*************************************")
+        print("Got Tweet from Twitter")
         return tweet
     except:
+        print("*************************************")
+        print("Did Not Get Tweet from Twitter")
         return None
 
 # Post to reddit function
@@ -83,8 +87,12 @@ lastTweet = 0
 while True:
     newTweet = get_last_tweet(api)
     if newTweet == None:
+        print("*************************************")
+        print("No new Tweet Available")
         continue
     if newTweet.id != lastTweet:
+        print("*************************************")
+        print("Tweet Available")
         lastTweet = newTweet.id
         
         # Remove URL from title
@@ -95,11 +103,15 @@ while True:
 
         # If tweet has URL
         if newTweet.entities['urls']!=[]:
+            print("*************************************")
+            print("Tweet has URL")
             expanded_url = newTweet.entities['urls'][0].get('expanded_url')
             url = newTweet.entities['urls'][0].get('url')
 
         # If tweet has media
         elif 'media' in newTweet.entities:
+            print("*************************************")
+            print("Tweet has Media")
             for media in newTweet.extended_entities['media']:
                 mediaUrl.append(media['media_url'])
 
@@ -115,6 +127,8 @@ while True:
 
         # If tweet is only text
         else:
+            print("*************************************")
+            print("Tweet has No Text")
             post_text = ""
             expanded_url = None
             url = None
@@ -122,5 +136,5 @@ while True:
         # If title would be blank
         if title == url:
             title = "Fortnite Twitter"
-        time.sleep(10)
         post()
+        time.sleep(10)
