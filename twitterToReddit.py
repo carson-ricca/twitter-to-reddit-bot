@@ -28,12 +28,8 @@ postTo = os.environ['REDDIT_SUB']
 def get_last_tweet(self):
     try:
         tweet = self.user_timeline(copyFrom,count = 1, tweet_mode = "extended", include_entities = True)[0]
-        print("*************************************")
-        print("Got Tweet from Twitter")
         return tweet
     except:
-        print("*************************************")
-        print("Did Not Get Tweet from Twitter")
         return None
 
 # Post to reddit function
