@@ -133,3 +133,4 @@ while True:
         if title == url:
             title = "Fortnite Twitter"
         post()
+        time.sleep(10)
