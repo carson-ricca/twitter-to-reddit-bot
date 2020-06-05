@@ -5,6 +5,8 @@ import re
 import time
 import os
 
+print("********************************")
+print("Running")
 # Reddit REST API connection initialization
 reddit = praw.Reddit(client_id = os.environ['REDDIT_CLIENT_ID'], 
     client_secret = os.environ['REDDIT_CLIENT_SECRET'], 
