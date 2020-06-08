@@ -2,6 +2,8 @@
 keys.py
 config.py
 localTest.txt
+streamTest.py
+cloudTest.txt
 
 # Editors
 .vscode/

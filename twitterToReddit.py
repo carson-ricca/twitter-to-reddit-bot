@@ -4,7 +4,6 @@ import tweepy
 import re
 import time
 import os
-
 print("********************************")
 print("Running")
 # Reddit REST API connection initialization
@@ -14,6 +13,8 @@ reddit = praw.Reddit(client_id = os.environ['REDDIT_CLIENT_ID'],
     username = os.environ['REDDIT_USERNAME'], 
     password = os.environ['REDDIT_PASSWORD']
 )
+
+reddit.validate_on_submit = True
 # Twitter API connection
 auth = tweepy.OAuthHandler(os.environ['TWITTER_CONSUMER_KEY'], os.environ['TWITTER_CONSUMER_SECRET'])
 auth.set_access_token(os.environ['TWITTER_ACCESS_TOKEN'], os.environ['TWITTER_ACCESS_TOKEN_SECRET'])
@@ -23,78 +24,24 @@ api = tweepy.API(auth, wait_on_rate_limit = True)
 errors = 0
 copyFrom = os.environ['TWITTER_USERNAME']
 postTo = os.environ['REDDIT_SUB']
+expanded_url=''
+post_text = ''
+title = ''
 
-time.sleep(30)
-# Get latest tweet
-def get_last_tweet(self):
-    try:
-        tweet = self.user_timeline(copyFrom,count = 1, tweet_mode = "extended", include_entities = True)[0]
-        return tweet
-    except:
-        return None
-
-# Post to reddit function
-def post():
-    global postTo
-    global errors
-
-    try:
-        # If there is a URL in the tweet
-        if expanded_url != None:
-            subreddit = reddit.subreddit(postTo)
-            post = subreddit.submit(title, url = expanded_url)
-            print("Posted to " + postTo)
-            print("Title: " + title)
-
-        # If there is no URL in the tweet
-        else:
-            subreddit = reddit.subreddit(postTo)
-            post = subreddit.submit(title, selftext = post_text)
-            print("Posted to " + postTo)
-            print("Title: " + title)
-
-        # Sets post flair to DISCUSSION automatically
-        flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
-        post.flair.select(flair_id)
-
-    except praw.exceptions.APIException as e:
-        print(e.message)
-
-        if(e.error_type == "RATELIMIT"):
-            delay = re.search("(\d+) minutes?", e.message)
-
-            if delay:
-                delay_seconds = float(int(delay.group(1)) * 60)
-                time.sleep(delay_seconds)
-                post()
-            else:
-                delay = re.search("(\d+) seconds", e.message)
-                delay_seconds = float(int(delay.group(1)))
-                time.sleep(delay_seconds)
-                post()
-
-    except:
-        errors = errors + 1
-        if (errors > 5):
-            print("Crashed")
-            exit(1)
-
-# Loop to check for new tweets
-lastTweet = 0
-while True:
-    newTweet = get_last_tweet(api)
-    if newTweet == None:
-        print("*************************************")
-        print("No new Tweet Available")
-        continue
-    if newTweet.id != lastTweet:
-        print("*************************************")
-        print("Tweet Available")
-        lastTweet = newTweet.id
+# Stream intialization
+class listener(tweepy.StreamListener):
+    global expanded_url
+    global post_text
+    global title
+    def on_status(self, status):
+        newTweet = status
         
         # Remove URL from title
-        title = re.sub(r'http\S+', '', newTweet.full_text)
-        
+        if 'extended_tweet' in newTweet._json:
+            title = re.sub(r'http\S+', '', newTweet.full_text)
+        else:
+            title = re.sub(r'http\S+', '', newTweet.text)
+
         # Prepare reddit post
         mediaUrl = []
 
@@ -127,10 +74,58 @@ while True:
             print("*************************************")
             print("Tweet has Only Text")
             post_text = ""
-            expanded_url = None
+            expanded_url = "https://twitter.com/" + status.user.screen_name + "/status/" + str(status.id)
             url = None
 
         # If title would be blank
         if title == url:
             title = "Fortnite Twitter"
-        post()
+
+        global postTo
+        global errors
+
+        try:
+            # If there is a URL in the tweet
+            if expanded_url != None:
+                subreddit = reddit.subreddit(postTo)
+                post = subreddit.submit(title, url = expanded_url)
+                print("Posted to " + postTo)
+                print("Title: " + title)
+
+            # If there is no URL in the tweet
+            else:
+                subreddit = reddit.subreddit(postTo)
+                post = subreddit.submit(title, selftext = post_text)
+                print("Posted to " + postTo)
+                print("Title: " + title)
+
+            # Sets post flair to DISCUSSION automatically
+            flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
+            post.flair.select(flair_id)
+
+        except praw.exceptions.APIException as e:
+            print(e.message)
+
+            if(e.error_type == "RATELIMIT"):
+                delay = re.search("(\d+) minutes?", e.message)
+
+                if delay:
+                    delay_seconds = float(int(delay.group(1)) * 60)
+                    time.sleep(delay_seconds)
+                    post()
+                else:
+                    delay = re.search("(\d+) seconds", e.message)
+                    delay_seconds = float(int(delay.group(1)))
+                    time.sleep(delay_seconds)
+                    post()
+
+        except:
+            errors = errors + 1
+            if (errors > 5):
+                print("Crashed")
+                exit(1)
+
+if __name__ == "__main__":
+    myListener = listener()
+    stream = tweepy.Stream(auth = api.auth, listener = myListener)
+    stream.filter(follow=[copyFrom])
