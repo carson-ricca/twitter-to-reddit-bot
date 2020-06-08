@@ -33,6 +33,8 @@ class listener(tweepy.StreamListener):
     global expanded_url
     global post_text
     global title
+
+    # When stream finds a new tweet do the following
     def on_status(self, status):
         newTweet = status
         
@@ -47,14 +49,14 @@ class listener(tweepy.StreamListener):
 
         # If tweet has URL
         if newTweet.entities['urls']!=[]:
-            print("*************************************")
+            print("********************************")
             print("Tweet has URL")
             expanded_url = newTweet.entities['urls'][0].get('expanded_url')
             url = newTweet.entities['urls'][0].get('url')
 
         # If tweet has media
         elif 'media' in newTweet.entities:
-            print("*************************************")
+            print("********************************")
             print("Tweet has Media")
             for media in newTweet.extended_entities['media']:
                 mediaUrl.append(media['media_url'])
@@ -71,7 +73,7 @@ class listener(tweepy.StreamListener):
 
         # If tweet is only text
         else:
-            print("*************************************")
+            print("********************************")
             print("Tweet has Only Text")
             post_text = ""
             expanded_url = "https://twitter.com/" + status.user.screen_name + "/status/" + str(status.id)
@@ -103,6 +105,7 @@ class listener(tweepy.StreamListener):
             flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
             post.flair.select(flair_id)
 
+        # Given a rate limit exception
         except praw.exceptions.APIException as e:
             print(e.message)
 
@@ -126,6 +129,8 @@ class listener(tweepy.StreamListener):
                 exit(1)
 
 if __name__ == "__main__":
+
+    # Sets up listener to monitor @FortniteGame continuously for new tweets
     myListener = listener()
     stream = tweepy.Stream(auth = api.auth, listener = myListener)
     stream.filter(follow=[copyFrom])
