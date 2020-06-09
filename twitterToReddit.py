@@ -38,11 +38,12 @@ class listener(tweepy.StreamListener):
     def on_status(self, status):
         newTweet = status
         
+        title = "Courtesy of Fortnite's Official Twitter: "
         # Remove URL from title
         if 'extended_tweet' in newTweet._json:
-            title = re.sub(r'http\S+', '', newTweet.full_text)
+            title += re.sub(r'http\S+', '', newTweet.full_text)
         else:
-            title = re.sub(r'http\S+', '', newTweet.text)
+            title += re.sub(r'http\S+', '', newTweet.text)
 
         # Prepare reddit post
         mediaUrl = []
