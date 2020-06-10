@@ -28,6 +28,19 @@ expanded_url=''
 post_text = ''
 title = ''
 
+# Method to only get tweets posted by the user
+def from_creator(status):
+    if hasattr(status, 'retweeted_status'):
+        return False
+    elif status.in_reply_to_status_id != None:
+        return False
+    elif status.in_reply_to_screen_name != None:
+        return False
+    elif status.in_reply_to_user_id != None:
+        return False
+    else:
+        return True
+
 # Stream intialization
 class listener(tweepy.StreamListener):
     global expanded_url
@@ -36,98 +49,99 @@ class listener(tweepy.StreamListener):
 
     # When stream finds a new tweet do the following
     def on_status(self, status):
-        newTweet = status
-        
-        title = "Courtesy of Fortnite's Official Twitter: "
-        # Remove URL from title
-        if 'extended_tweet' in newTweet._json:
-            title += re.sub(r'http\S+', '', newTweet.full_text)
-        else:
-            title += re.sub(r'http\S+', '', newTweet.text)
-
-        # Prepare reddit post
-        mediaUrl = []
-
-        # If tweet has URL
-        if newTweet.entities['urls']!=[]:
-            print("********************************")
-            print("Tweet has URL")
-            expanded_url = newTweet.entities['urls'][0].get('expanded_url')
-            url = newTweet.entities['urls'][0].get('url')
-
-        # If tweet has media
-        elif 'media' in newTweet.entities:
-            print("********************************")
-            print("Tweet has Media")
-            for media in newTweet.extended_entities['media']:
-                mediaUrl.append(media['media_url'])
-
-            if len(mediaUrl) == 1:
-                expanded_url = mediaUrl
-                url = None
-            elif len(mediaUrl) > 1:
-                post_text = ""
-                for item in mediaUrl:
-                    post_text += item + "\n\n"
-                expanded_url = None
-                url = None
-
-        # If tweet is only text
-        else:
-            print("********************************")
-            print("Tweet has Only Text")
-            post_text = ""
-            expanded_url = "https://twitter.com/" + status.user.screen_name + "/status/" + str(status.id)
-            url = None
-
-        # If title would be blank
-        if title == url:
-            title = "Fortnite Twitter"
-
-        global postTo
-        global errors
-
-        try:
-            # If there is a URL in the tweet
-            if expanded_url != None:
-                subreddit = reddit.subreddit(postTo)
-                post = subreddit.submit(title, url = expanded_url)
-                print("Posted to " + postTo)
-                print("Title: " + title)
-
-            # If there is no URL in the tweet
+        if from_creator(status):
+            newTweet = status
+            
+            title = "Courtesy of Fortnite's Official Twitter: "
+            # Remove URL from title
+            if 'extended_tweet' in newTweet._json:
+                title += re.sub(r'http\S+', '', newTweet.full_text)
             else:
-                subreddit = reddit.subreddit(postTo)
-                post = subreddit.submit(title, selftext = post_text)
-                print("Posted to " + postTo)
-                print("Title: " + title)
+                title += re.sub(r'http\S+', '', newTweet.text)
 
-            # Sets post flair to DISCUSSION automatically
-            flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
-            post.flair.select(flair_id)
+            # Prepare reddit post
+            mediaUrl = []
 
-        # Given a rate limit exception
-        except praw.exceptions.APIException as e:
-            print(e.message)
+            # If tweet has URL
+            if newTweet.entities['urls']!=[]:
+                print("********************************")
+                print("Tweet has URL")
+                expanded_url = newTweet.entities['urls'][0].get('expanded_url')
+                url = newTweet.entities['urls'][0].get('url')
 
-            if(e.error_type == "RATELIMIT"):
-                delay = re.search("(\d+) minutes?", e.message)
+            # If tweet has media
+            elif 'media' in newTweet.entities:
+                print("********************************")
+                print("Tweet has Media")
+                for media in newTweet.extended_entities['media']:
+                    mediaUrl.append(media['media_url'])
 
-                if delay:
-                    delay_seconds = float(int(delay.group(1)) * 60)
-                    time.sleep(delay_seconds)
-                    post()
+                if len(mediaUrl) == 1:
+                    expanded_url = mediaUrl
+                    url = None
+                elif len(mediaUrl) > 1:
+                    post_text = ""
+                    for item in mediaUrl:
+                        post_text += item + "\n\n"
+                    expanded_url = None
+                    url = None
+
+            # If tweet is only text
+            else:
+                print("********************************")
+                print("Tweet has Only Text")
+                post_text = ""
+                expanded_url = "https://twitter.com/" + status.user.screen_name + "/status/" + str(status.id)
+                url = None
+
+            # If title would be blank
+            if title == url:
+                title = "Fortnite Twitter"
+
+            global postTo
+            global errors
+
+            try:
+                # If there is a URL in the tweet
+                if expanded_url != None:
+                    subreddit = reddit.subreddit(postTo)
+                    post = subreddit.submit(title, url = expanded_url)
+                    print("Posted to " + postTo)
+                    print("Title: " + title)
+
+                # If there is no URL in the tweet
                 else:
-                    delay = re.search("(\d+) seconds", e.message)
-                    delay_seconds = float(int(delay.group(1)))
-                    time.sleep(delay_seconds)
-                    post()
+                    subreddit = reddit.subreddit(postTo)
+                    post = subreddit.submit(title, selftext = post_text)
+                    print("Posted to " + postTo)
+                    print("Title: " + title)
 
-        except:
-            errors = errors + 1
-            if (errors > 5):
-                print("Crashed")
-                exit(1)
+                # Sets post flair to DISCUSSION automatically
+                flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
+                post.flair.select(flair_id)
+
+            # Given a rate limit exception
+            except praw.exceptions.APIException as e:
+                print(e.message)
+
+                if(e.error_type == "RATELIMIT"):
+                    delay = re.search("(\d+) minutes?", e.message)
+
+                    if delay:
+                        delay_seconds = float(int(delay.group(1)) * 60)
+                        time.sleep(delay_seconds)
+                        post()
+                    else:
+                        delay = re.search("(\d+) seconds", e.message)
+                        delay_seconds = float(int(delay.group(1)))
+                        time.sleep(delay_seconds)
+                        post()
+
+            except:
+                errors = errors + 1
+                if (errors > 5):
+                    print("Crashed")
+                    exit(1)
 
 if __name__ == "__main__":
 
