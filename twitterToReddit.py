@@ -55,9 +55,11 @@ class listener(tweepy.StreamListener):
             title = "Courtesy of Fortnite's Official Twitter: "
             # Remove URL from title
             if 'extended_tweet' in newTweet._json:
-                title += re.sub(r'http\S+', '', newTweet.full_text)
+                tweet = newTweet._json['extended_tweet']['full_text']
+                title += re.sub(r'http\S+', '', tweet)
             else:
-                title += re.sub(r'http\S+', '', newTweet.text)
+                tweet = newTweet._json['text']
+                title += re.sub(r'http\S+', '', tweet)
 
             # Prepare reddit post
             mediaUrl = []
@@ -102,23 +104,24 @@ class listener(tweepy.StreamListener):
             global errors
 
             try:
+
+                # ID for DISCUSSION flair
+                flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
+                
                 # If there is a URL in the tweet
                 if expanded_url != None:
                     subreddit = reddit.subreddit(postTo)
-                    post = subreddit.submit(title, url = expanded_url)
+                    post = subreddit.submit(title, url = expanded_url, flair_id = flair_id)
                     print("Posted to " + postTo)
                     print("Title: " + title)
 
                 # If there is no URL in the tweet
                 else:
                     subreddit = reddit.subreddit(postTo)
-                    post = subreddit.submit(title, selftext = post_text)
+                    post = subreddit.submit(title, selftext = post_text, flair_id = flair_id)
                     print("Posted to " + postTo)
                     print("Title: " + title)
 
-                # Sets post flair to DISCUSSION automatically
-                flair_id = '9c53efac-cd94-11e7-8824-0eba7e80ccec'
-                post.flair.select(flair_id)
 
             # Given a rate limit exception
             except praw.exceptions.APIException as e:
@@ -147,5 +150,5 @@ if __name__ == "__main__":
 
     # Sets up listener to monitor @FortniteGame continuously for new tweets
     myListener = listener()
-    stream = tweepy.Stream(auth = api.auth, listener = myListener)
+    stream = tweepy.Stream(auth = api.auth, listener = myListener, tweet_mode = 'extended')
     stream.filter(follow=[copyFrom])
